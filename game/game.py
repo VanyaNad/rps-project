@@ -1,69 +1,81 @@
-from game.models import Player, Enemy
-from game.settings import ATTACK_PAIRS_OUTCOME, WIN, LOSE, POINTS_FOR_FIGHT, POINTS_FOR_KILLING
-from game.exceptions import GameOver, EnemyDown
-from game.score import ScoreHandler
+from .models import Player, Enemy
+from .settings import (
+    MODE_HARD, HARD_MODE_MULTIPLIER, POINTS_FOR_FIGHT, POINTS_FOR_KILLING,
+    WIN, LOSE, DRAW, ATTACK_PAIRS_OUTCOME, GAME_OVER_MSG, ENEMY_DEFEATED_MSG,
+    QUIT_GAME_MSG, SCORE_SAVED_SUCCESS_MSG, LIVES_STATUS_MSG, PLAYER_WON_ROUND_MSG,
+    PLAYER_LOST_ROUND_MSG, DRAW_MSG, POINTS_FOR_ENEMY_DEFEAT_MSG, PLAYER_CHOSE_MSG,
+    ENEMY_CHOSE_MSG
+)
+from .exceptions import GameOver, EnemyDown, QuitGame, ScoreFileError
+from .score import ScoreHandler
 
 
 class Game:
-    def __init__(self, player: Player, mode: str) -> None:
-        """
-        Initialize the game with a player, difficulty mode, and the first enemy.
-        """
-        self.player = player
-        self.mode = mode
-        self.enemy = self.create_enemy(1)
+    """Main game class managing player, enemy, and game loop"""
 
-    def create_enemy(self, level: int) -> Enemy:
-        """
-        Create a new enemy with the given level.
-        """
-        return Enemy(level)
+    def __init__(self, player: Player):
+        self.player = player
+        self.enemy = self.create_enemy()
+
+    def create_enemy(self) -> Enemy:
+        """Creates a new enemy with increased difficulty if in hard mode"""
+        multiplier = HARD_MODE_MULTIPLIER if self.player.mode == MODE_HARD else 1
+        level = self.enemy.level + 1 if hasattr(self, 'enemy') else 1
+        return Enemy(level=level, difficulty_multiplier=multiplier)
 
     def play(self) -> None:
-        """
-        Start the game loop where the player fights enemies until game over.
-        """
+        """Starts the main game loop"""
         while True:
             try:
-                self.fight()
-            except GameOver:
-                print("Game Over!")
+                self.display_lives()
+                result = self.fight()
+                self.handle_fight_result(result)
+            except EnemyDown as e:
+                print(e)
+                self.player.add_score(POINTS_FOR_KILLING)
+                print(POINTS_FOR_ENEMY_DEFEAT_MSG.format(POINTS_FOR_KILLING))
+                print(ENEMY_DEFEATED_MSG)
+                self.enemy = self.create_enemy()
+            except GameOver as e:
+                print(e)
                 self.save_score()
                 break
-            except EnemyDown:
-                print("Enemy defeated!")
-                self.player.add_score(POINTS_FOR_KILLING)
-                self.enemy = self.create_enemy(self.enemy.level + 1)
+            except QuitGame as e:
+                print(QUIT_GAME_MSG)
+                self.save_score()
+                break
 
-    def fight(self) -> None:
-        """
-        Handle a fight between the player and the enemy.
-        """
-        player_attack = self.player.select_attack()
-        enemy_attack = self.enemy.select_attack()
-        print(f"Player chose {player_attack}, Enemy chose {enemy_attack}")
-        result = ATTACK_PAIRS_OUTCOME[(player_attack, enemy_attack)]
-        self.handle_fight_result(result)
+    def fight(self) -> int:
+        """Handles a single fight round between player and enemy"""
+        try:
+            player_attack = self.player.select_attack()
+            enemy_attack = self.enemy.select_attack()
+            print(f"\n{PLAYER_CHOSE_MSG.format(player_attack)}\n{ENEMY_CHOSE_MSG.format(enemy_attack)}\n")
+            return ATTACK_PAIRS_OUTCOME[(player_attack, enemy_attack)]
+        except QuitGame as e:
+            raise QuitGame(e.message)
 
     def handle_fight_result(self, result: int) -> None:
-        """
-        Handle the result of a fight round.
-        """
+        """Updates lives and score based on fight result"""
         if result == WIN:
-            print("You won this round!")
+            print(PLAYER_WON_ROUND_MSG)
             self.enemy.decrease_lives()
             self.player.add_score(POINTS_FOR_FIGHT)
         elif result == LOSE:
-            print("You lost this round!")
+            print(PLAYER_LOST_ROUND_MSG)
             self.player.decrease_lives()
         else:
-            print("It's a draw!")
+            print(DRAW_MSG)
 
     def save_score(self) -> None:
-        """
-        Save the player's score using the ScoreHandler.
-        """
-        score_handler = ScoreHandler()
-        score_handler.add_record(self.player)
-        score_handler.save()
+        """Saves the player's score at the end of the game"""
+        try:
+            score_handler = ScoreHandler()
+            score_handler.save(self.player, self.player.mode)
+            print(SCORE_SAVED_SUCCESS_MSG)
+        except ScoreFileError as e:
+            print(e)
 
+    def display_lives(self) -> None:
+        """Displays the current lives of both the player and the enemy"""
+        print(LIVES_STATUS_MSG.format(self.player.lives, self.enemy.lives))

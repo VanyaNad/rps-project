@@ -1,61 +1,97 @@
-from game.settings import SCORE_FILE, MAX_RECORDS_NUMBER
+from .settings import (
+    SCORE_FILE, MAX_RECORDS_NUMBER, SCORES_WRITE_ERROR_MSG,
+    FILE_NOT_FOUND_MSG, SCORES_WRITTEN_SUCCESS_MSG, NO_SCORES_FOUND_MSG,
+    SKIPPING_INVALID_RECORD_MSG, TOP_SCORES_TITLE_MSG
+)
+from .exceptions import ScoreFileError
+from typing import List
 
 
 class PlayerRecord:
-    def __init__(self, name: str, mode: str, score: int) -> None:
+    """Represents a single player's score record"""
+
+    def __init__(self, name: str, mode: str, score: int):
         self.name = name
         self.mode = mode
-        self.score = score
-
-    def __gt__(self, other: 'PlayerRecord') -> bool:
-        return self.score > other.score
+        self.score = int(score)
 
     def __str__(self) -> str:
         return f"{self.name}\t{self.mode}\t{self.score}"
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, PlayerRecord):
+            return NotImplemented
+        return self.name == other.name and self.mode == other.mode
 
-class GameRecord:
-    def __init__(self) -> None:
-        self.records = []
-
-    def add_record(self, record: PlayerRecord) -> None:
-        for existing_record in self.records:
-            if existing_record.name == record.name and existing_record.mode == record.mode:
-                existing_record.score = max(existing_record.score, record.score)
-                return
-        self.records.append(record)
-
-    def prepare_records(self) -> None:
-        self.records.sort(reverse=True)
-        self.records = self.records[:MAX_RECORDS_NUMBER]
+    def __lt__(self, other: "PlayerRecord") -> bool:
+        return self.score < other.score
 
 
 class ScoreHandler:
-    def __init__(self) -> None:
-        self.file_name = SCORE_FILE
-        self.game_record = GameRecord()
-        self.read()
+    """Manages score reading, saving, displaying, and clearing"""
 
-    def read(self) -> None:
+    def __init__(self):
+        self.records: List[PlayerRecord] = self.read_scores()
+
+    @staticmethod
+    def read_scores() -> List[PlayerRecord]:
+        """Reads scores from a file"""
+        records = []
         try:
-            with open(self.file_name, 'r') as file:
+            with open(SCORE_FILE, 'r') as file:
                 for line in file:
-                    name, mode, score = line.strip().split('\t')
-                    self.game_record.add_record(PlayerRecord(name, mode, int(score)))
+                    try:
+                        name, mode, score = line.strip().split('\t')
+                        records.append(PlayerRecord(name, mode, int(score)))
+                    except ValueError:
+                        print(SKIPPING_INVALID_RECORD_MSG.format(line.strip()))
         except FileNotFoundError:
-            pass
+            print(FILE_NOT_FOUND_MSG.format(SCORE_FILE))
+        return records
 
-    def save(self) -> None:
-        self.game_record.prepare_records()
-        with open(self.file_name, 'w') as file:
-            for record in self.game_record.records:
-                file.write(str(record) + '\n')
+    def save(self, player, mode: str) -> None:
+        """Saves a player's score to the file, updating existing records if needed"""
+        new_record = PlayerRecord(player.name, mode, player.score)
+
+        updated = False
+        for record in self.records:
+            if record == new_record:
+                if new_record.score > record.score:
+                    record.score = new_record.score
+                updated = True
+                break
+
+        if not updated:
+            self.records.append(new_record)
+
+        self.records = sorted(self.records, key=lambda r: r.score, reverse=True)[:MAX_RECORDS_NUMBER]
+        self.write_scores()
+
+    def write_scores(self) -> None:
+        """Writes the current records to the score file."""
+        try:
+            with open(SCORE_FILE, 'w') as file:
+                for record in self.records:
+                    file.write(str(record) + "\n")
+            print(SCORES_WRITTEN_SUCCESS_MSG.format(SCORE_FILE))
+        except IOError as e:
+            raise ScoreFileError(SCORES_WRITE_ERROR_MSG.format(e))
 
     def display(self) -> None:
-        print("\n--- High Scores ---")
-        for record in self.game_record.records:
-            print(record)
+        """Displays the top scores"""
+        print(f"\n{TOP_SCORES_TITLE_MSG}")
+        if not self.records:
+            print(NO_SCORES_FOUND_MSG)
+        else:
+            for record in self.records:
+                print(record)
+        print("\n")
 
-    def add_record(self, player: Player) -> None:
-        self.game_record.add_record(PlayerRecord(player.name, self.file_name, player.score))
-
+    def clear(self) -> None:
+        """Clears all the records from the score file"""
+        try:
+            with open(SCORE_FILE, 'w') as file:
+                file.write('')
+            self.records = []
+        except IOError as e:
+            raise ScoreFileError(SCORES_WRITE_ERROR_MSG.format(e))

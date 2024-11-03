@@ -1,64 +1,92 @@
-# game/models.py - Player and Enemy models
-from game.settings import PLAYER_LIVES, ALLOWED_ATTACKS
-from game.exceptions import GameOver, EnemyDown
 import random
+from .settings import PLAYER_LIVES, ENEMY_BASE_LIVES, ALLOWED_ATTACKS, PLAYER_ATTACK_INPUT_PROMPT, \
+    INVALID_ATTACK_CHOICE_MSG, ENEMY_DOWN_EXCEPTION_MSG
+from .exceptions import GameOver, EnemyDown, QuitGame
 
 
 class Player:
-    def __init__(self, name: str) -> None:
-        """
-        Initialize the player with a name, lives, and score.
-        """
-        self.name = name
-        self.lives = PLAYER_LIVES
-        self.score = 0
+    """Represents the player in the game"""
 
-    def select_attack(self) -> str:
+    def __init__(self, name: str, mode: str) -> None:
         """
-        Prompt the player to select an attack.
+        Init the player with a name, lives, score, and game mode
+
+        Args:
+            name (str): The player's name.
+            mode (str): The game mode (Normal or Hard).
+        """
+        self.name: str = name
+        self.lives: int = PLAYER_LIVES
+        self.score: int = 0
+        self.mode: str = mode
+
+    @staticmethod
+    def select_attack() -> str:
+        """Ask player to choose an attack
+
+        Returns:
+          str: The chosen attack option.
+
+        Raises:
+            QuitGame: If the player chooses to quit the game
         """
         while True:
-            attack = input(f"Select your attack ({', '.join(ALLOWED_ATTACKS.keys())}): ")
-            if attack in ALLOWED_ATTACKS:
-                return ALLOWED_ATTACKS[attack]
-            print("Invalid choice. Please try again.")
+            attack_choice: str = input(PLAYER_ATTACK_INPUT_PROMPT).strip().lower()
+            if attack_choice in ALLOWED_ATTACKS:
+                return ALLOWED_ATTACKS[attack_choice]
+            elif attack_choice == 'q':
+                raise QuitGame("Player chose to quit the game.")
+            else:
+                print(INVALID_ATTACK_CHOICE_MSG)
 
     def decrease_lives(self) -> None:
-        """
-        Decrease player's lives by 1. Raise GameOver exception if no lives remain.
+        """Decreases player's lives by 1 and checks if the player is out of lives
+
+        Raises
+            GameOver: If the player's lives reach zero
         """
         self.lives -= 1
         if self.lives <= 0:
-            raise GameOver(f"{self.name} has no lives left!")
+            raise GameOver("Game Over! Player has lost all lives.")
 
     def add_score(self, points: int) -> None:
-        """
-        Add points to the player's score.
+        """Add points to the player's score
+
+        Args:
+            points (int): The number of points to add
         """
         self.score += points
 
 
 class Enemy:
-    def __init__(self, level: int) -> None:
-        """
-        Initialize the enemy with a level and corresponding lives.
-        """
-        self.level = level
-        self.lives = level
+    """Represents the enemy in the game."""
 
-    def select_attack(self) -> str:
+    def __init__(self, level: int, difficulty_multiplier: int = 1) -> None:
         """
-        Randomly select an attack for the enemy.
+        Init the enemy with level and calculates lives based on difficulty
+
+        Args:
+            level (int): The level of the enemy
+            difficulty_multiplier (int): Multiplier for difficulty (used for number of lives)
+        """
+        self.level: int = level
+        self.lives: int = ENEMY_BASE_LIVES * difficulty_multiplier * level
+
+    @staticmethod
+    def select_attack() -> str:
+        """Randomly selects an attack for the enemy
+
+        Returns:
+            str: The chosen attack option
         """
         return random.choice(list(ALLOWED_ATTACKS.values()))
 
     def decrease_lives(self) -> None:
-        """
-        Decrease enemy's lives by 1. Raise EnemyDown exception if no lives remain.
+        """Decreases enemy's lives by 1 and checks if the enemy is out of lives
+
+        Raises:
+            EnemyDown: If the enemy's lives reach zero
         """
         self.lives -= 1
         if self.lives <= 0:
-            raise EnemyDown("Enemy has been defeated!")
-
-
-
+            raise EnemyDown(ENEMY_DOWN_EXCEPTION_MSG)
