@@ -109,5 +109,9 @@ SHOW_SCORES = "Show Scores"
 CLEAR_SCORES = "Clear Scores"
 QUIT = "Quit"
 
+ZERO = 0
+ONE = 1
+TWO = 2
+
 
 
