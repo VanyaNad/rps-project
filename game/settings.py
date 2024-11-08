@@ -54,7 +54,6 @@ TOP_SCORES_TITLE_MSG = "--- Top Scores ---"
 ENEMY = 'enemy'
 PLAYER_CHOSE_MSG = "Player chose: {}"
 ENEMY_CHOSE_MSG = "Enemy chose: {}"
-GAME_OVER_MSG = "Game Over! Player has lost all lives."
 ENEMY_DEFEATED_MSG = "Enemy defeated! A stronger enemy appears..."
 QUIT_GAME_MSG = "Thank you for playing! See you next time!"
 SCORE_SAVED_SUCCESS_MSG = "Your score has been saved successfully."
@@ -65,7 +64,6 @@ DRAW_MSG = "It's a draw!"
 LIVES_STATUS_MSG = "\n--- Current Lives ---\nPlayer Lives: {}\nEnemy Lives: {}\n----------------------\n"
 
 # Player Messages
-PLAYER_LOST_LIVES_MSG = "Game Over! Player has lost all lives."
 PLAYER_QUIT_GAME_MSG = "Player chose to quit the game."
 PLAYER_ATTACK_INPUT_PROMPT = "Choose your attack: (1) Paper, (2) Stone, (3) Scissors, (q) Quit: "
 INVALID_ATTACK_CHOICE_MSG = "Invalid attack choice. Please enter 1, 2, or 3."
