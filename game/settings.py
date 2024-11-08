@@ -106,3 +106,10 @@ INVALID_ATTACK_EXCEPTION_MSG = "Invalid attack choice."
 QUIT_GAME_EXCEPTION_MSG = "The player has chosen to quit the game."
 INVALID_MENU_OPTION_EXCEPTION_MSG = "Invalid menu option selected. Please choose 1, 2, or 3."
 SCORE_FILE_ERROR_MSG = "There was an issue with the score file."
+START_GAMES = "Start Game"
+SHOW_SCORES = "Show Scores"
+CLEAR_SCORES = "Clear Scores"
+QUIT = "Quit"
+
+
+
