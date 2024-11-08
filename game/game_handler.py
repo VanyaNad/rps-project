@@ -7,7 +7,7 @@ from .settings import (
     INVALID_MENU_OPTION_MSG, EXIT_GAME_MSG, ENTER_NAME_PROMPT, INVALID_NAME_MSG,
     DIFFICULTY_INPUT_PROMPT, INVALID_DIFFICULTY_MSG, CLEAR_SCORES_PROMPT,
     SCORES_CLEARED_MSG, SCORES_NOT_CLEARED_MSG, INVALID_CONFIRMATION_INPUT_MSG,
-    MODES, NO_SCORES_MSG, YES, NO
+    MODES, NO_SCORES_MSG, YES, NO, START_GAMES, SHOW_SCORES, CLEAR_SCORES, QUIT
 )
 
 
@@ -41,19 +41,19 @@ class GameHandler:
 
         # Display Start Game Option
         menu_options.append(MENU_START_GAME_OPTION)
-        print(f"({MENU_START_GAME_OPTION}) Start Game")
+        print(f"({MENU_START_GAME_OPTION}) {START_GAMES}")
 
         # Display Show Scores and Clear Scores options if scores exist
         if self.scores_exist():
             menu_options.append(MENU_SHOW_SCORES_OPTION)
-            print(f"({MENU_SHOW_SCORES_OPTION}) Show Scores")
+            print(f"({MENU_SHOW_SCORES_OPTION}) {SHOW_SCORES}")
 
             menu_options.append(MENU_CLEAR_SCORES_OPTION)
-            print(f"({MENU_CLEAR_SCORES_OPTION}) Clear Scores")
+            print(f"({MENU_CLEAR_SCORES_OPTION}) {CLEAR_SCORES}")
 
         # Display Quit Option
         menu_options.append(MENU_EXIT_OPTION)
-        print(f"({MENU_EXIT_OPTION}) Quit")
+        print(f"({MENU_EXIT_OPTION}) {QUIT}")
 
         return menu_options
 
