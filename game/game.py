@@ -18,9 +18,12 @@ class Game:
         self.enemy = self.create_enemy()
 
     def create_enemy(self) -> Enemy:
-        """Creates a new enemy with increased difficulty if in hard mode"""
+        """Creates a new enemy with increased difficulty if in hard mode."""
         multiplier = HARD_MODE_MULTIPLIER if self.player.mode == MODE_HARD else 1
+        # If the 'enemy' attribute exists, increment its level; otherwise, set it to 1
         level = self.enemy.level + 1 if hasattr(self, 'enemy') else 1
+        # Ensure the level is at least 1
+        level = max(1, level)
         return Enemy(level=level, difficulty_multiplier=multiplier)
 
     def play(self) -> None:

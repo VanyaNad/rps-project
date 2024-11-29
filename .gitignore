@@ -3,3 +3,4 @@
 .iml
 scores.txt
 __pycache__
+.coverage
