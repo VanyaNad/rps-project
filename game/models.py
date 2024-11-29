@@ -1,6 +1,6 @@
 import random
 from .settings import PLAYER_LIVES, ENEMY_BASE_LIVES, ALLOWED_ATTACKS, PLAYER_ATTACK_INPUT_PROMPT, \
-    INVALID_ATTACK_CHOICE_MSG, ENEMY_DOWN_EXCEPTION_MSG
+    INVALID_ATTACK_CHOICE_MSG, ENEMY_DOWN_EXCEPTION_MSG, GAME_OVER_EXCEPTION_MSG, PLAYER_QUIT_GAME_MSG
 from .exceptions import GameOver, EnemyDown, QuitGame
 
 
@@ -35,7 +35,7 @@ class Player:
             if attack_choice in ALLOWED_ATTACKS:
                 return ALLOWED_ATTACKS[attack_choice]
             elif attack_choice == 'q':
-                raise QuitGame("Player chose to quit the game.")
+                raise QuitGame(PLAYER_QUIT_GAME_MSG)
             else:
                 print(INVALID_ATTACK_CHOICE_MSG)
 
@@ -47,7 +47,7 @@ class Player:
         """
         self.lives -= 1
         if self.lives <= 0:
-            raise GameOver("Game Over! Player has lost all lives.")
+            raise GameOver(GAME_OVER_EXCEPTION_MSG)
 
     def add_score(self, points: int) -> None:
         """Add points to the player's score

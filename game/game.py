@@ -1,7 +1,7 @@
 from .models import Player, Enemy
 from .settings import (
     MODE_HARD, HARD_MODE_MULTIPLIER, POINTS_FOR_FIGHT, POINTS_FOR_KILLING,
-    WIN, LOSE, DRAW, ATTACK_PAIRS_OUTCOME, GAME_OVER_MSG, ENEMY_DEFEATED_MSG,
+    WIN, LOSE, DRAW, ATTACK_PAIRS_OUTCOME, ENEMY_DEFEATED_MSG,
     QUIT_GAME_MSG, SCORE_SAVED_SUCCESS_MSG, LIVES_STATUS_MSG, PLAYER_WON_ROUND_MSG,
     PLAYER_LOST_ROUND_MSG, DRAW_MSG, POINTS_FOR_ENEMY_DEFEAT_MSG, PLAYER_CHOSE_MSG,
     ENEMY_CHOSE_MSG
@@ -18,9 +18,12 @@ class Game:
         self.enemy = self.create_enemy()
 
     def create_enemy(self) -> Enemy:
-        """Creates a new enemy with increased difficulty if in hard mode"""
+        """Creates a new enemy with increased difficulty if in hard mode."""
         multiplier = HARD_MODE_MULTIPLIER if self.player.mode == MODE_HARD else 1
+        # If the 'enemy' attribute exists, increment its level; otherwise, set it to 1
         level = self.enemy.level + 1 if hasattr(self, 'enemy') else 1
+        # Ensure the level is at least 1
+        level = max(1, level)
         return Enemy(level=level, difficulty_multiplier=multiplier)
 
     def play(self) -> None:
