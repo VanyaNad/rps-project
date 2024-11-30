@@ -71,13 +71,13 @@ class Game:
             print(DRAW_MSG)
 
     def save_score(self) -> None:
-        """Saves the player's score at the end of the game"""
+        """Saves the player's score at the end of the game."""
         try:
             score_handler = ScoreHandler()
-            score_handler.save(self.player, self.player.mode)
+            score_handler.save(self.player.name, self.player.mode, self.player.score)
             print(SCORE_SAVED_SUCCESS_MSG)
-        except ScoreFileError as e:
-            print(e)
+        except Exception as e:
+            print(f"Error saving score: {e}")
 
     def display_lives(self) -> None:
         """Displays the current lives of both the player and the enemy"""

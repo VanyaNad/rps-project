@@ -1,5 +1,7 @@
 import unittest
 from game.score import PlayerRecord
+from game.score import ScoreHandler
+from unittest.mock import patch, MagicMock
 
 
 class TestPlayerRecord(unittest.TestCase):
@@ -32,6 +34,17 @@ class TestPlayerRecord(unittest.TestCase):
         record2 = PlayerRecord(name="Alice", mode="Normal", score=100)
         self.assertEqual(record1.name, record2.name)
         self.assertEqual(record1.score, record2.score)
+
+class TestScoreHandlerInitialization(unittest.TestCase):
+    @patch('game.database.Database.connect')
+    def test_initialization(self, mock_connect):
+        mock_db_connection = MagicMock()
+        mock_connect.return_value = mock_db_connection
+
+        handler = ScoreHandler()
+
+        mock_connect.assert_called_once()
+        self.assertEqual(handler.db, mock_db_connection)
 
 
 if __name__ == "__main__":

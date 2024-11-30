@@ -84,20 +84,17 @@ class GameHandler:
                 print(INVALID_DIFFICULTY_MSG)
 
     def show_scores(self) -> None:
-        """Displays saved scores"""
+        """Displays saved scores."""
         score_handler = ScoreHandler()
-        if self.scores_exist():
-            score_handler.display()
-        else:
-            print(NO_SCORES_MSG)
+        score_handler.display()
 
     @staticmethod
     def clear_scores() -> None:
-        """Clears all scores if needed"""
+        """Clears all scores."""
+        score_handler = ScoreHandler()
         while True:
             confirmation = input(CLEAR_SCORES_PROMPT).strip().lower()
             if confirmation == YES:
-                score_handler = ScoreHandler()
                 score_handler.clear()
                 print(SCORES_CLEARED_MSG)
                 break
@@ -109,9 +106,9 @@ class GameHandler:
 
     @staticmethod
     def scores_exist() -> bool:
-        """Checks if there are existing scores"""
+        """Checks if there are existing scores."""
         score_handler = ScoreHandler()
-        return len(score_handler.records) > 0
+        return bool(score_handler.read_scores())
 
     @staticmethod
     def validate_name(name: str) -> bool:
