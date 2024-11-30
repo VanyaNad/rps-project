@@ -1,10 +1,5 @@
-from .settings import (
-    SCORE_FILE, MAX_RECORDS_NUMBER, SCORES_WRITE_ERROR_MSG,
-    FILE_NOT_FOUND_MSG, SCORES_WRITTEN_SUCCESS_MSG, NO_SCORES_FOUND_MSG,
-    SKIPPING_INVALID_RECORD_MSG, TOP_SCORES_TITLE_MSG
-)
-from .exceptions import ScoreFileError
-from typing import List
+from typing import List, Dict, Any
+from game.database import Database
 
 
 class PlayerRecord:
@@ -31,67 +26,80 @@ class ScoreHandler:
     """Manages score reading, saving, displaying, and clearing"""
 
     def __init__(self):
-        self.records: List[PlayerRecord] = self.read_scores()
+        self.db = Database().connect()
 
-    @staticmethod
-    def read_scores() -> List[PlayerRecord]:
-        """Reads scores from a file"""
-        records = []
+    def read_scores(self) -> List[Dict[str, Any]]:
+        """Fetches top scores from the database."""
+        query = """
+            SELECT p.name, m.mode_name, s.score, s.created_at
+            FROM scores s
+            JOIN players p ON s.player_id = p.id
+            JOIN modes m ON s.mode_id = m.id
+            ORDER BY s.score DESC;
+        """
+        with self.db.cursor() as cursor:
+            cursor.execute(query)
+            return cursor.fetchall()
+
+    def save(self, player_name: str, mode_name: str, score: int) -> None:
+        """Saves or updates a player's score in the database."""
         try:
-            with open(SCORE_FILE, 'r') as file:
-                for line in file:
-                    try:
-                        name, mode, score = line.strip().split('\t')
-                        records.append(PlayerRecord(name, mode, int(score)))
-                    except ValueError:
-                        print(SKIPPING_INVALID_RECORD_MSG.format(line.strip()))
-        except FileNotFoundError:
-            print(FILE_NOT_FOUND_MSG.format(SCORE_FILE))
-        return records
+            with self.db.cursor() as cursor:
+                # Insert or find player
+                cursor.execute("""
+                INSERT INTO players (name)
+                VALUES (%s)
+                ON CONFLICT (name) DO NOTHING
+                RETURNING id;
+                """, (player_name,))
 
-    def save(self, player, mode: str) -> None:
-        """Saves a player's score to the file, updating existing records if needed"""
-        new_record = PlayerRecord(player.name, mode, player.score)
+                result = cursor.fetchone()
+                player_id = result['id'] if result and 'id' in result else self._get_player_id(player_name)
 
-        updated = False
-        for record in self.records:
-            if record == new_record:
-                if new_record.score > record.score:
-                    record.score = new_record.score
-                updated = True
-                break
+                cursor.execute("SELECT id FROM modes WHERE mode_name = %s;", (mode_name,))
+                mode_result = cursor.fetchone()
+                if not mode_result:
+                    raise Exception(f"Mode '{mode_name}' not found in the database.")
+                mode_id = mode_result['id']
 
-        if not updated:
-            self.records.append(new_record)
+                cursor.execute("""
+                INSERT INTO scores (player_id, mode_id, score)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (player_id, mode_id)
+                DO UPDATE SET score = EXCLUDED.score;
+                """, (player_id, mode_id, score))
 
-        self.records = sorted(self.records, key=lambda r: r.score, reverse=True)[:MAX_RECORDS_NUMBER]
-        self.write_scores()
-
-    def write_scores(self) -> None:
-        """Writes the current records to the score file."""
-        try:
-            with open(SCORE_FILE, 'w') as file:
-                for record in self.records:
-                    file.write(str(record) + "\n")
-            print(SCORES_WRITTEN_SUCCESS_MSG.format(SCORE_FILE))
-        except IOError as e:
-            raise ScoreFileError(SCORES_WRITE_ERROR_MSG.format(e))
-
-    def display(self) -> None:
-        """Displays the top scores"""
-        print(f"\n{TOP_SCORES_TITLE_MSG}")
-        if not self.records:
-            print(NO_SCORES_FOUND_MSG)
-        else:
-            for record in self.records:
-                print(record)
-        print("\n")
+                self.db.commit()
+        except Exception as e:
+            self.db.rollback()
+            print(f"Error saving score: {e}")
 
     def clear(self) -> None:
-        """Clears all the records from the score file"""
-        try:
-            with open(SCORE_FILE, 'w') as file:
-                file.write('')
-            self.records = []
-        except IOError as e:
-            raise ScoreFileError(SCORES_WRITE_ERROR_MSG.format(e))
+        """Clears all scores from the database."""
+        query = """
+            DELETE FROM scores;
+        """
+        with self.db.cursor() as cursor:
+            cursor.execute(query)
+            self.db.commit()
+
+    def display(self) -> None:
+        """Displays the top scores from the database."""
+        scores = self.read_scores()
+        print("--- Top Scores ---")
+        if not scores:
+            print("No scores found.")
+        else:
+            for score in scores:
+                print(f"Player: {score['name']}, Mode: {score['mode_name']}, Score: {score['score']}")
+        print("\n")
+
+    def _get_player_id(self, player_name: str) -> int:
+        """Fetches the player's ID."""
+        query = "SELECT id FROM players WHERE name = %s;"
+        with self.db.cursor() as cursor:
+            cursor.execute(query, (player_name,))
+            result = cursor.fetchone()
+            if not result:
+                raise Exception(f"Player with name '{player_name}' not found.")
+            return result['id']

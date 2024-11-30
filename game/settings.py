@@ -1,3 +1,5 @@
+import json
+
 # Modes
 MODE_NORMAL = 'Normal'
 MODE_HARD = 'Hard'
@@ -113,5 +115,11 @@ ZERO = 0
 ONE = 1
 TWO = 2
 
-
-
+# DATABASE
+DB_CONFIG = {
+    'dbname': 'rps_db',
+    'user': 'rps_user',
+    'password': 'your_password',
+    'host': 'localhost',
+    'port': 5432
+}
